@@ -247,7 +247,7 @@ def authenticate(token_path: str, token_base64_path: str, force_reauth: bool = F
         return False
 
     except GarminConnectConnectionError as e:
-        # 0.3.2 stops with AuthenticationError for rejected credentials;
+        # 0.3.20 stops with AuthenticationError for rejected credentials;
         # connection errors preserve the exhausted login strategy's details.
         print("\n✗ Authentication request failed", file=sys.stderr)
         print(f"  {e}", file=sys.stderr)

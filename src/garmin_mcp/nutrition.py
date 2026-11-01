@@ -73,7 +73,8 @@ def resolve_weight_goal_target_date(stored_target, date, target_date=None):
 def _extract_http_status(exc: Exception) -> Optional[int]:
     """Return an HTTP status code from structured exception fields when available.
 
-    The installed garminconnect client sometimes raises bare
+    garminconnect >= 0.3.20 attaches the failed HTTP response to
+    GarminConnectConnectionError.response; older versions raised bare
     GarminConnectConnectionError instances with only a status-bearing message,
     so fall back to parsing the numeric code from that stable library format.
     """

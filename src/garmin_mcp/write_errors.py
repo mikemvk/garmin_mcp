@@ -35,8 +35,22 @@ logger = logging.getLogger(__name__)
 _MAX_BODY_CHARS = 500
 
 # garminconnect raises GarminConnectConnectionError("API Error <status> - <msg>")
-# for any HTTP status >= 400; the response object itself is not attached.
+# for any HTTP status >= 400 and attaches the original response, so the status
+# can be read structurally. The message format is still parsed as a fallback
+# because the proxy chains its own actionable message around the library error.
 _API_ERROR_RE = re.compile(r"API Error (\d{3})(?: - (.*))?", re.DOTALL)
+
+
+def _status_from_response(exc):
+    """Return the HTTP status attached to a garminconnect error, or None.
+
+    garminconnect >= 0.3.20 sets ``GarminConnectConnectionError.response`` to
+    the failed HTTP response; older versions only carried the status inside
+    the message.
+    """
+    response = getattr(exc, "response", None)
+    status = getattr(response, "status_code", None)
+    return status if isinstance(status, int) else None
 
 
 def _upstream(exc):
@@ -56,6 +70,9 @@ def _upstream(exc):
         if match:
             body = (match.group(2) or "").strip()[:_MAX_BODY_CHARS]
             return int(match.group(1)), body or None
+        status = _status_from_response(current)
+        if status is not None:
+            return status, str(current)[:_MAX_BODY_CHARS] or None
         if isinstance(current, GarminConnectTooManyRequestsError):
             return 429, str(current)[:_MAX_BODY_CHARS] or None
     return None, None
